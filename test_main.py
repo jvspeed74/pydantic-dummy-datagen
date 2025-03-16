@@ -64,6 +64,10 @@ class UnionModel(BaseModel):
     mixed_field: Union[int, str]
 
 
+class AnyModel(BaseModel):
+    mixed_field: Any
+
+
 @pytest.mark.unit
 def test_generates_valid_json():
     result = generate_dummy_data(SimpleModel)
@@ -74,16 +78,19 @@ def test_generates_valid_json():
     assert isinstance(data["name"], str)
     assert isinstance(data["count"], int)
 
+
 @pytest.mark.unit
 def test_respects_int_constraints():
     result = json.loads(generate_dummy_data(User))
     assert 100 <= result["id"] <= 999
     assert 1001 <= result["address"]["zip_code"] <= 9998
 
+
 @pytest.mark.unit
 def test_respects_string_constraints():
     result = json.loads(generate_dummy_data(User))
     assert 5 <= len(result["name"]) <= 15
+
 
 @pytest.mark.unit
 def test_handles_exact_constraints():
@@ -91,20 +98,24 @@ def test_handles_exact_constraints():
     assert len(result["exact_length"]) == 10
     assert result["exact_value"] == 42
 
+
 @pytest.mark.unit
 def test_handles_optional_fields():
     results = [json.loads(generate_dummy_data(User)) for _ in range(10)]
     assert any(r["age"] is None for r in results) or any(r["age"] is not None for r in results)
+
 
 @pytest.mark.unit
 def test_generates_enum_values():
     result = json.loads(generate_dummy_data(User))
     assert result["role"] in [role.value for role in UserRole]
 
+
 @pytest.mark.unit
 def test_handles_empty_model():
     result = generate_dummy_data(EmptyModel)
     assert json.loads(result) == {}
+
 
 @pytest.mark.unit
 def test_handles_nested_models():
@@ -114,6 +125,7 @@ def test_handles_nested_models():
     assert "city" in address
     assert "zip_code" in address
 
+
 @pytest.mark.unit
 def test_handles_deep_nesting():
     result = json.loads(generate_dummy_data(DeepNested))
@@ -122,6 +134,7 @@ def test_handles_deep_nesting():
     assert all("city" in addr for addr in result["level2"])
     assert isinstance(result["level3"], dict)
     assert all("city" in addr for addr in result["level3"].values())
+
 
 @pytest.mark.unit
 def test_handles_collections():
@@ -133,11 +146,13 @@ def test_handles_collections():
     assert len(result["coordinates"]) == 2
     assert all(isinstance(coord, float) for coord in result["coordinates"])
 
+
 @pytest.mark.unit
 def test_handles_root_string_model():
     result = generate_dummy_data(RootString)
     value = json.loads(result)
     assert isinstance(value, str)
+
 
 @pytest.mark.unit
 def test_handles_root_list_model():
@@ -146,6 +161,7 @@ def test_handles_root_list_model():
     assert isinstance(value, list)
     assert all(isinstance(user, dict) for user in value)
     assert all("name" in user for user in value)
+
 
 @pytest.mark.unit
 def test_consistent_schema():
@@ -158,8 +174,16 @@ def test_consistent_schema():
     for result in results[1:]:
         assert set(result["address"].keys()) == first_address_keys
 
+
 @pytest.mark.unit
 def test_handles_unions():
     results = [json.loads(generate_dummy_data(UnionModel)) for _ in range(10)]
     types_found = {type(r["mixed_field"]) for r in results}
     assert len(types_found) >= 1  # Should at least generate one type
+
+
+@pytest.mark.unit
+def test_handles_any():
+    results = [json.loads(generate_dummy_data(AnyModel)) for _ in range(10)]
+    types_found = {type(r["mixed_field"]) for r in results}
+    assert len(types_found) >= 1

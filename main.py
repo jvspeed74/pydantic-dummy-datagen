@@ -101,6 +101,9 @@ def generate_dummy_data(model: Type[TModel]) -> str:
             return round(fake.pyfloat(), 2)
         elif field_type is list:
             return [fake.word() for _ in range(3)]
+        # Handle Any type
+        elif field_type is Any:
+            return choice([fake.word(), fake.random_int(min=1, max=1000), fake.pyfloat(), fake.sentence(nb_words=4)])
 
         return None
 
